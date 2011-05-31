@@ -54,21 +54,7 @@
 						$lens.show();
 
 						$anchor.bind('mousemove.bigImage', function(e) {
-							var lensTop = e.pageY - $lens.height(),
-								lensLeft = e.pageX - ($lens.width() / 2);
-
-							$lens.css({
-								top: lensTop + 'px',
-								left: lensLeft + 'px'
-							});
-
-							var imgTop = lensTop / imageRatios.height,
-								imgLeft = lensLeft / imageRatios.width;
-
-							$largeImg.css({
-								top: (0 - imgTop) + 'px',
-								left: (0 - imgLeft) + 'px'
-							});
+							moveZoom($lens, $smallImg, $largeImg, imageRatios, e);
 						});
 					})
 					.bind('mouseleave.bigImage', function() {
@@ -243,6 +229,32 @@
 		});
 	}
 
+	function moveZoom($lens, $smallImg, $largeImg, imageRatios, e) {
+		var lensTop = e.pageY - $lens.height(),
+			lensLeft = e.pageX - ($lens.width() / 2);
+
+		if (lensTop < 0) { lensTop = 0; }
+		if (lensLeft < 0) { lensLeft = 0; }
+
+		var maxLensTop = $smallImg.height() - $lens.height(),
+			maxLensLeft = $smallImg.width() - $lens.width();
+
+		if (lensTop > maxLensTop) { lensTop = maxLensTop; }
+		if (lensLeft > maxLensLeft) { lensLeft = maxLensLeft; }
+
+		$lens.css({
+			top: lensTop + 'px',
+			left: lensLeft + 'px'
+		});
+
+		var imgTop = lensTop / imageRatios.height,
+			imgLeft = lensLeft / imageRatios.width;
+
+		$largeImg.css({
+			top: (0 - imgTop) + 'px',
+			left: (0 - imgLeft) + 'px'
+		});
+	}
 
 	/*
 	* Utility Functions
