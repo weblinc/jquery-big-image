@@ -4,7 +4,7 @@
 			return typeof argumentsArray[0] === 'undefined' || $.isPlainObject(argumentsArray[0]);
 		},
 		'changeImage': function(argumentsArray) {
-			return typeof argumentsArray[0] === 'changeImage' && $.isPlainObject(argumentsArray[1]);
+			return argumentsArray[0] === 'changeImage' && $.isPlainObject(argumentsArray[1]);
 		},
 		'destroy': function(argumentsArray) {
 			return argumentsArray[0] === 'destroy';
@@ -43,23 +43,20 @@
 				setupAnchor($anchor);
 				setupLens($lens, $smallImg, $largeImg);
 
-				var imageRatios = calculateImageRatios($smallImg, $largeImg);
-
-				$zoomContainer.hide();
-				$lens.hide();
+				toggleZoom($anchor, false);
 
 				$anchor
 					.bind('mouseenter.bigImage', function() {
-						$zoomContainer.show();
-						$lens.show();
+						toggleZoom($anchor);
+
+						var imageRatios = calculateImageRatios($smallImg, $largeImg);
 
 						$anchor.bind('mousemove.bigImage', function(e) {
 							moveZoom($lens, $smallImg, $largeImg, imageRatios, e);
 						});
 					})
 					.bind('mouseleave.bigImage', function() {
-						$zoomContainer.hide();
-						$lens.hide();
+						toggleZoom($anchor);
 
 						$smallImg.unbind('mousemove.bigImage');
 					});
@@ -67,25 +64,44 @@
 		},
 
 		changeImage: function(anchor, settings) {
-			// Loading...
+			var $anchor  = $(anchor),
+				$lens    = getLens($anchor),
+				$loading = $('<span/>', { text: 'Loading...' });
 
-			preload(settings.largeImageUrl, function() {
+			$lens.append($loading);
+
+			preload(settings.smallImageUrl, settings.largeImageUrl, function() {
 				var $smallImg      = getSmallImage($anchor),
-					$lens          = getLens($anchor);
 					$largeImg      = getLargeImage($anchor),
 					$zoomContainer = getZoomContainer($anchor);
 
 				$smallImg.attr('src', settings.smallImageUrl);
 				$largeImg.attr('src', settings.largeImageUrl);
 
+				$zoomContainer.show();
 				setupLens($lens, $smallImg, $largeImg);
 
-				// remove Loading...
+				toggleZoom($anchor, false);
+
+				$loading.remove();
 			});
 		},
 
 		destroy: function(anchor) {
+			var $anchor        = $(anchor),
+				$lens          = getLens($anchor);
+				$zoomContainer = getZoomContainer($anchor);
 
+			$anchor
+				.unbind('click.bigImage')
+				.unbind('mouseenter.bigImage')
+				.unbind('mousemove.bigImage')
+				.unbind('mouseleave.bigImage');
+
+			$lens.remove();
+			$zoomContainer.remove();
+
+			$.bigImage.zoomContainers[anchor] = null;
 		}
 	});
 
@@ -131,7 +147,7 @@
 
 		$lens.css({
 			position: 'absolute',
-			background: 'black',
+			border: '2px solid black',
 			zIndex: 9999
 		});
 
@@ -150,7 +166,7 @@
 	function setupAnchor($anchor) {
 		$.bigImage.anchors.push($anchor[0]);
 
-		return $anchor.click(function(e) { e.preventDefault(); });
+		return $anchor.bind('click.bigImage', function(e) { e.preventDefault(); });
 	}
 
 	function getZoomContainer($anchor) {
@@ -229,15 +245,35 @@
 		});
 	}
 
+	function toggleZoom($anchor, visible) {
+		var $lens          = getLens($anchor),
+			$zoomContainer = getZoomContainer($anchor);
+
+		if (typeof visible === 'undefined') {
+			visible = !$zoomContainer.is(':visible');
+		}
+
+		if (visible) {
+			$zoomContainer.show();
+			$lens.show();
+		} else {
+			$zoomContainer.hide();
+			$lens.hide();
+		}
+	}
+
 	function moveZoom($lens, $smallImg, $largeImg, imageRatios, e) {
-		var lensTop = e.pageY - $lens.height(),
-			lensLeft = e.pageX - ($lens.width() / 2);
+		var lensHeight = $lens.outerHeight(),
+			lensWidth = $lens.outerWidth();
+
+		var lensTop = e.pageY - lensHeight,
+			lensLeft = e.pageX - (lensWidth / 2);
 
 		if (lensTop < 0) { lensTop = 0; }
 		if (lensLeft < 0) { lensLeft = 0; }
 
-		var maxLensTop = $smallImg.height() - $lens.height(),
-			maxLensLeft = $smallImg.width() - $lens.width();
+		var maxLensTop = $smallImg.height() - lensHeight,
+			maxLensLeft = $smallImg.width() - lensWidth;
 
 		if (lensTop > maxLensTop) { lensTop = maxLensTop; }
 		if (lensLeft > maxLensLeft) { lensLeft = maxLensLeft; }
@@ -256,20 +292,46 @@
 		});
 	}
 
+
 	/*
 	* Utility Functions
 	*
 	*/
 
-	function preload(url, callback) {
-		$('<img/>')
-			.load(callback)
-			.get(0)
-				.src = url;
+	function preload() {
+		var argumentsArray = $.makeArray(arguments),
+
+			images         = argumentsArray.slice(0, argumentsArray.length - 1),
+			callback       = argumentsArray[argumentsArray.length - 1],
+
+			preloaded      = [];
+
+		function allImagesLoaded() {
+			var allLoaded = true;
+
+			$.each(images, function(i, url) {
+				allLoaded = allLoaded && $.inArray(url, preloaded) >= 0;
+			});
+
+			return allLoaded;
+		}
+
+		$.each(images, function(i, url) {
+			$('<img/>')
+				.load(function() {
+					preloaded.push(url);
+
+					if (allImagesLoaded()) {
+						callback();
+					}
+				})
+					.get(0)
+						.src = url;
+		});
 	}
 
 	function throwBigImageError(message) {
-		throw 'BigImage Error:' + message;
+		throw 'BigImage Error: ' + message;
 	}
 
 
@@ -278,5 +340,10 @@
 	*
 	*/
 
-	$(document).bind('destroy.bigImage', $.noop);
+	$(document).bind('destroy.bigImage', function() {
+		$.each($.bigImage.anchors, function(i, el) {
+			$(el).bigImage('destroy');
+		});
+	});
+
 })(jQuery);
