@@ -71,21 +71,26 @@
 			});
 		},
 
-		changeImage: function (anchor, settings) {
-			var $anchor  = $(anchor),
-				$lens    = getLens($anchor),
+		changeImage: function (anchor, options) {
+			var $anchor = $(anchor);
+
+			if (!$anchor.data('bigImageId')) {
+				throwBigImageError('must be initialized to change image');
+			}
+
+			var $lens    = getLens($anchor),
 				$loading = getDomSetting(settings, 'lensLoading');
 
-			$anchor.attr('href', settings.largeImageUrl);
+			$anchor.attr('href', options.largeImageUrl);
 			$lens.append($loading);
 
-			preload(settings.smallImageUrl, settings.largeImageUrl, function () {
+			preload(options.smallImageUrl, options.largeImageUrl, function () {
 				var $smallImg      = getSmallImage($anchor),
 					$largeImg      = getLargeImage($anchor),
 					$zoomContainer = getZoomContainer($anchor);
 
-				$smallImg.attr('src', settings.smallImageUrl);
-				$largeImg.attr('src', settings.largeImageUrl);
+				$smallImg.attr('src', options.smallImageUrl);
+				$largeImg.attr('src', options.largeImageUrl);
 
 				$zoomContainer.show();
 				setupLens($lens, $smallImg, $largeImg);
@@ -97,20 +102,31 @@
 		},
 
 		destroy: function (anchor) {
-			var $anchor        = $(anchor),
-				$lens          = getLens($anchor);
-				$zoomContainer = getZoomContainer($anchor);
+			var $anchor = $(anchor);
+
+			if (!$anchor.data('bigImageId')) {
+				throwBigImageError('plugin not initialized');
+			}
+
+			var $lens          = getLens($anchor);
+				$zoomContainer = getZoomContainer($anchor),
+				id             = $anchor.data('bigImageId');
 
 			$anchor
 				.unbind('click.bigImage')
 				.unbind('mouseenter.bigImage')
 				.unbind('mousemove.bigImage')
-				.unbind('mouseleave.bigImage');
+				.unbind('mouseleave.bigImage')
+				.data('bigImageId', null)
 
 			$lens.remove();
 			$zoomContainer.remove();
 
-			$.bigImage.zoomContainers[anchor] = null;
+			$.bigImage.zoomContainers[id] = null;
+			$.bigImage.settings[id] = null;
+
+			var anchorIndex = $.bigImage.anchors.indexOf(anchor);
+			$.bigImage.anchors.splice(anchorIndex, 1);
 		}
 	});
 
