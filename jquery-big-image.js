@@ -330,17 +330,17 @@
 	function moveZoom($lens, $smallImg, $largeImg, imageRatios, event) {
 		var mouseOffset = $smallImg.offset(),
 
-			lensHeight = $lens.outerHeight(),
-			lensWidth = $lens.outerWidth(),
+			lensHeight  = $lens.outerHeight(),
+			lensWidth   = $lens.outerWidth(),
 
-			lensTop = (event.pageY - mouseOffset.top) - (lensHeight / 2),
-			lensLeft = (event.pageX - mouseOffset.left) - (lensWidth / 2);
+			lensTop     = (event.pageY - mouseOffset.top) - (lensHeight / 2),
+			lensLeft    = (event.pageX - mouseOffset.left) - (lensWidth / 2),
+
+			maxLensTop  = $smallImg.height() - lensHeight,
+			maxLensLeft = $smallImg.width() - lensWidth;
 
 		if (lensTop < 0) { lensTop = 0; }
 		if (lensLeft < 0) { lensLeft = 0; }
-
-		var maxLensTop = $smallImg.height() - lensHeight,
-			maxLensLeft = $smallImg.width() - lensWidth;
 
 		if (lensTop > maxLensTop) { lensTop = maxLensTop; }
 		if (lensLeft > maxLensLeft) { lensLeft = maxLensLeft; }
