@@ -79,7 +79,7 @@
 			}
 
 			var $lens    = getLens($anchor),
-				$loading = getDomSetting(settings, 'lensLoading');
+				$loading = getDomSetting(getSettings($anchor), 'lensLoading');
 
 			$anchor.attr('href', options.largeImageUrl);
 			$lens.append($loading);
