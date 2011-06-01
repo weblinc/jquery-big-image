@@ -13,12 +13,17 @@
 
 	$.bigImage = {
 		settings: {},
+
 		zoomContainers: {},
+		lenses: {},
+
 		anchors: []
 	};
 
 	$.extend($.bigImage, {
 		defaultSettings: {
+			autoStyle: true,
+
 			zoomContainer: '<div class="zoom-mask"></div>',
 			zoomWidth: 500,
 			zoomHeight: 500,
@@ -256,17 +261,16 @@
 	}
 
 	function getLens($anchor) {
-		var $val = $('> .lens', $anchor);
+		var val = $.bigImage.lenses[$anchor.data('bigImageId')];
 
-		if (!$val.length) {
-			var settings = getSettings($anchor);
+		if (!val) {
+			var settings = getSettings($anchor),
+				$lens = getDomSetting(settings, 'lens');
 
-			$val = getDomSetting(settings, 'lens')
-						.addClass('lens')
-						.appendTo($anchor);
+			val = $.bigImage.lenses[$anchor.data('bigImageId')] = $lens.appendTo($anchor);
 		}
 
-		return $val;
+		return val;
 	}
 
 	function calculateImageRatios($smallImg, $largeImg) {
@@ -323,12 +327,14 @@
 		}
 	}
 
-	function moveZoom($lens, $smallImg, $largeImg, imageRatios, e) {
-		var lensHeight = $lens.outerHeight(),
+	function moveZoom($lens, $smallImg, $largeImg, imageRatios, event) {
+		var mouseOffset = $smallImg.offset(),
+
+			lensHeight = $lens.outerHeight(),
 			lensWidth = $lens.outerWidth(),
 
-			lensTop = e.pageY - (lensHeight * 2),
-			lensLeft = e.pageX - (lensWidth / 2);
+			lensTop = (event.pageY - mouseOffset.top) - (lensHeight / 2),
+			lensLeft = (event.pageX - mouseOffset.left) - (lensWidth / 2);
 
 		if (lensTop < 0) { lensTop = 0; }
 		if (lensLeft < 0) { lensLeft = 0; }
