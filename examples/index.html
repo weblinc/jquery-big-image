@@ -9,7 +9,15 @@
 
 		<script type="text/javascript">
 			$(function() {
-				$('a.zoom').bigImage();
+				$('a.zoom').bigImage({
+					zoomHeight: 200,
+					zoomWidth: 500,
+					zoomWrapper: '<div class="zoom-wrapper"></div>',
+					zoomContainer: function() {
+						var $mask = $('<div/>', { 'class': 'zoom-mask' });
+						return $mask;
+					}
+				});
 
 				$('a.change-image').click(function() {
 					$('a.zoom').bigImage('changeImage', {

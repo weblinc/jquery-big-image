@@ -1,38 +1,47 @@
-(function($) {
+(function ($) {
 	var COMMANDS = {
-		'init': function(argumentsArray) {
+		'init': function (argumentsArray) {
 			return typeof argumentsArray[0] === 'undefined' || $.isPlainObject(argumentsArray[0]);
 		},
-		'changeImage': function(argumentsArray) {
+		'changeImage': function (argumentsArray) {
 			return argumentsArray[0] === 'changeImage' && $.isPlainObject(argumentsArray[1]);
 		},
-		'destroy': function(argumentsArray) {
+		'destroy': function (argumentsArray) {
 			return argumentsArray[0] === 'destroy';
 		}
 	};
 
 	$.bigImage = {
+		settings: {},
 		zoomContainers: {},
 		anchors: []
 	};
 
 	$.extend($.bigImage, {
-		settings: {
+		defaultSettings: {
+			zoomContainer: '<div class="zoom-mask"></div>',
+			zoomWidth: 500,
+			zoomHeight: 500,
 
+			lens: '<div/>',
+			lensLoading: '<span class="loading">Loading...</span>'
 		},
+
 
 		/*
 		* Public Functions
 		*
 		*/
 
-		init: function(anchor, options) {
+		init: function (anchor, settings) {
 			var $anchor = $(anchor),
 				largeImageUrl = $anchor.attr('href');
 
-			preload(largeImageUrl, function() {
+			setupAnchor($anchor, settings);
+
+			preload(largeImageUrl, function () {
 				var $smallImg      = getSmallImage($anchor),
-					$lens          = getLens($anchor);
+					$lens          = getLens($anchor),
 					$largeImg      = getLargeImage($anchor),
 					$zoomContainer = getZoomContainer($anchor);
 
@@ -40,22 +49,21 @@
 
 				$largeImg.attr('src', largeImageUrl);
 
-				setupAnchor($anchor);
 				setupLens($lens, $smallImg, $largeImg);
 
 				toggleZoom($anchor, false);
 
 				$anchor
-					.bind('mouseenter.bigImage', function() {
+					.bind('mouseenter.bigImage', function () {
 						toggleZoom($anchor);
 
 						var imageRatios = calculateImageRatios($smallImg, $largeImg);
 
-						$anchor.bind('mousemove.bigImage', function(e) {
+						$anchor.bind('mousemove.bigImage', function (e) {
 							moveZoom($lens, $smallImg, $largeImg, imageRatios, e);
 						});
 					})
-					.bind('mouseleave.bigImage', function() {
+					.bind('mouseleave.bigImage', function () {
 						toggleZoom($anchor);
 
 						$smallImg.unbind('mousemove.bigImage');
@@ -63,14 +71,15 @@
 			});
 		},
 
-		changeImage: function(anchor, settings) {
+		changeImage: function (anchor, settings) {
 			var $anchor  = $(anchor),
 				$lens    = getLens($anchor),
-				$loading = $('<span/>', { text: 'Loading...' });
+				$loading = getDomSetting(settings, 'lensLoading');
 
+			$anchor.attr('href', settings.largeImageUrl);
 			$lens.append($loading);
 
-			preload(settings.smallImageUrl, settings.largeImageUrl, function() {
+			preload(settings.smallImageUrl, settings.largeImageUrl, function () {
 				var $smallImg      = getSmallImage($anchor),
 					$largeImg      = getLargeImage($anchor),
 					$zoomContainer = getZoomContainer($anchor);
@@ -87,7 +96,7 @@
 			});
 		},
 
-		destroy: function(anchor) {
+		destroy: function (anchor) {
 			var $anchor        = $(anchor),
 				$lens          = getLens($anchor);
 				$zoomContainer = getZoomContainer($anchor);
@@ -105,12 +114,12 @@
 		}
 	});
 
-	$.fn.bigImage = function() {
+	$.fn.bigImage = function () {
 		var argumentsArray = $.makeArray(arguments),
 			command = null,
 			options = argumentsArray[argumentsArray.length - 1];
 
-		$.each(COMMANDS, function(name, fn) {
+		$.each(COMMANDS, function (name, fn) {
 			if (fn(argumentsArray)) {
 				command = name;
 			}
@@ -120,7 +129,7 @@
 			throwBigImageError('invalid method name');
 		}
 
-		return $(this).each(function() {
+		return $(this).each(function () {
 			$.bigImage[command](this, options);
 		});
 	};
@@ -131,12 +140,36 @@
 	*
 	*/
 
+	function setSettings($anchor, settings) {
+		var anchorSettings = $.extend($.bigImage.defaultSettings, settings);
+
+		$.bigImage.settings[$anchor.data('bigImageId')] = anchorSettings;
+		return anchorSettings;
+	}
+
+	function getSettings($anchor) {
+		return $.bigImage.settings[$anchor.data('bigImageId')];
+	}
+
+	function setupAnchor($anchor, settings) {
+		var id = (new Date()).getTime();
+
+		$.bigImage.anchors.push($anchor[0]);
+		$anchor.data('bigImageId', id);
+
+		setSettings($anchor, settings);
+
+		return $anchor.bind('click.bigImage', function (e) { e.preventDefault(); });
+	}
+
 	function setStyles($anchor, $smallImg, $lens, $zoomContainer, $largeImg) {
+		var settings = getSettings($anchor);
+
 		// TODO move CSS to CSS file
 
 		$anchor.css({
 			position: 'relative',
-			float: 'left',
+			'float': 'left',
 			display: 'block'
 			// TODO width/height values
 		});
@@ -152,8 +185,8 @@
 		});
 
 		$zoomContainer.css({
-			width: '500px',
-			height: '500px',
+			width: settings.zoomWidth + 'px',
+			height: settings.zoomHeight + 'px',
 			overflow: 'hidden',
 			position: 'relative'
 		});
@@ -163,17 +196,17 @@
 		});
 	}
 
-	function setupAnchor($anchor) {
-		$.bigImage.anchors.push($anchor[0]);
-
-		return $anchor.bind('click.bigImage', function(e) { e.preventDefault(); });
-	}
-
 	function getZoomContainer($anchor) {
-		var val = $.bigImage.zoomContainers[$anchor[0]];
+		var val = $.bigImage.zoomContainers[$anchor.data('bigImageId')];
 
 		if (!val) {
-			val = $.bigImage.zoomContainers[$anchor[0]] = $('<div/>', { 'class': 'zoom-mask' }).appendTo('body');
+			var settings = getSettings($anchor),
+				$container = getDomSetting(settings, 'zoomContainer');
+
+			val = $.bigImage.zoomContainers[$anchor.data('bigImageId')] = $container.appendTo('body');
+
+			var wrapper = getDomSetting(settings, 'zoomWrapper');
+			val.wrap(wrapper);
 		}
 
 		return val;
@@ -201,10 +234,14 @@
 	}
 
 	function getLens($anchor) {
-		var $val = $('div.lens', $anchor);
+		var $val = $('> .lens', $anchor);
 
 		if (!$val.length) {
-			$val = $('<div/>', { 'class': 'lens' }).appendTo($anchor);
+			var settings = getSettings($anchor);
+
+			$val = getDomSetting(settings, 'lens')
+						.addClass('lens')
+						.appendTo($anchor);
 		}
 
 		return $val;
@@ -228,11 +265,13 @@
 	}
 
 	function calculateLensSize($smallImg, $largeImg) {
-		var imageRatios = calculateImageRatios($smallImg, $largeImg);
+		var $anchor = $smallImg.closest('a'),
+			imageRatios = calculateImageRatios($smallImg, $largeImg),
+			settings = getSettings($anchor);
 
 		return {
-			height: imageRatios.height * 500,
-			width: imageRatios.width * 500
+			height: imageRatios.height * settings.zoomHeight,
+			width: imageRatios.width * settings.zoomWidth
 		};
 	}
 
@@ -264,9 +303,9 @@
 
 	function moveZoom($lens, $smallImg, $largeImg, imageRatios, e) {
 		var lensHeight = $lens.outerHeight(),
-			lensWidth = $lens.outerWidth();
+			lensWidth = $lens.outerWidth(),
 
-		var lensTop = e.pageY - lensHeight,
+			lensTop = e.pageY - (lensHeight * 2),
 			lensLeft = e.pageX - (lensWidth / 2);
 
 		if (lensTop < 0) { lensTop = 0; }
@@ -309,16 +348,16 @@
 		function allImagesLoaded() {
 			var allLoaded = true;
 
-			$.each(images, function(i, url) {
+			$.each(images, function (i, url) {
 				allLoaded = allLoaded && $.inArray(url, preloaded) >= 0;
 			});
 
 			return allLoaded;
 		}
 
-		$.each(images, function(i, url) {
+		$.each(images, function (i, url) {
 			$('<img/>')
-				.load(function() {
+				.load(function () {
 					preloaded.push(url);
 
 					if (allImagesLoaded()) {
@@ -334,14 +373,30 @@
 		throw 'BigImage Error: ' + message;
 	}
 
+	function getDomSetting(settings, name) {
+		var value = settings[name];
+
+		if ($.isFunction(value)) {
+			value = value();
+		}
+
+		value = $(value);
+
+		if (!value.length) {
+			throwBigImageError(name + ' must be a valid HTML string or return a valid DOM object');
+		}
+
+		return value;
+	}
+
 
 	/*
 	* Public Event Binding
 	*
 	*/
 
-	$(document).bind('destroy.bigImage', function() {
-		$.each($.bigImage.anchors, function(i, el) {
+	$(document).bind('destroy.bigImage', function () {
+		$.each($.bigImage.anchors, function (i, el) {
 			$(el).bigImage('destroy');
 		});
 	});
