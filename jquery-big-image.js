@@ -181,35 +181,41 @@
 	function setStyles($anchor, $smallImg, $lens, $zoomContainer, $largeImg) {
 		var settings = getSettings($anchor);
 
-		// TODO move CSS to CSS file
-
-		$anchor.css({
-			position: 'relative',
-			'float': 'left',
-			display: 'block'
-			// TODO width/height values
-		});
-
-		$smallImg.css({
-			zIndex: 9998
-		});
-
-		$lens.css({
-			position: 'absolute',
-			border: '2px solid black',
-			zIndex: 9999
-		});
-
 		$zoomContainer.css({
 			width: settings.zoomWidth + 'px',
-			height: settings.zoomHeight + 'px',
-			overflow: 'hidden',
-			position: 'relative'
+			height: settings.zoomHeight + 'px'
 		});
 
-		$largeImg.css({
-			position: 'absolute'
-		});
+		if (settings.autoStyle) {
+			$anchor.css({
+				position: 'relative',
+				display: 'block',
+				width: $smallImg.width()
+			});
+
+			$smallImg.css({
+				zIndex: 999
+			});
+
+			$lens.css({
+				position: 'absolute',
+				border: '2px solid black',
+				zIndex: 1000
+			});
+
+			var anchorOffset = $anchor.offset();
+
+			$zoomContainer.css({
+				overflow: 'hidden',
+				position: 'absolute',
+				top: anchorOffset.top,
+				left: anchorOffset.left + $anchor.outerWidth()
+			});
+
+			$largeImg.css({
+				position: 'absolute'
+			});
+		}
 	}
 
 	function getZoomContainer($anchor) {
