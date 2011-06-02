@@ -14,7 +14,7 @@
 	$.bigImage = {
 		settings: {},
 
-		zoomContainers: {},
+		zoomMasks: {},
 		lenses: {},
 
 		anchors: []
@@ -24,12 +24,16 @@
 		defaultSettings: {
 			autoStyle: true,
 
-			zoomContainer: '<div class="zoom-mask"></div>',
-			zoomWidth: 500,
-			zoomHeight: 500,
+			zoom: {
+				width: 500,
+				height: 500,
+				maskElement: '<div class="zoom-mask"></div>'
+			},
 
-			lens: '<div/>',
-			lensLoading: '<span class="loading">Loading...</span>'
+			lens: {
+				element: '<div/>',
+				loadingElement: '<span class="loading">Loading...</span>'
+			}
 		},
 
 
@@ -45,12 +49,12 @@
 			setupAnchor($anchor, settings);
 
 			preload(largeImageUrl, function () {
-				var $smallImg      = getSmallImage($anchor),
-					$lens          = getLens($anchor),
-					$largeImg      = getLargeImage($anchor),
-					$zoomContainer = getZoomContainer($anchor);
+				var $smallImg = getSmallImage($anchor),
+					$lens     = getLens($anchor),
+					$largeImg = getLargeImage($anchor),
+					$zoomMask = getZoomMask($anchor);
 
-				setStyles($anchor, $smallImg, $lens, $zoomContainer, $largeImg);
+				setStyles($anchor, $smallImg, $lens, $zoomMask, $largeImg);
 
 				$largeImg.attr('src', largeImageUrl);
 
@@ -84,20 +88,20 @@
 			}
 
 			var $lens    = getLens($anchor),
-				$loading = getDomSetting(getSettings($anchor), 'lensLoading');
+				$loading = getElementSetting(getSettings($anchor).lens.loadingElement);
 
 			$anchor.attr('href', options.largeImageUrl);
 			$lens.append($loading);
 
 			preload(options.smallImageUrl, options.largeImageUrl, function () {
-				var $smallImg      = getSmallImage($anchor),
-					$largeImg      = getLargeImage($anchor),
-					$zoomContainer = getZoomContainer($anchor);
+				var $smallImg = getSmallImage($anchor),
+					$largeImg = getLargeImage($anchor),
+					$zoomMask = getZoomMask($anchor);
 
 				$smallImg.attr('src', options.smallImageUrl);
 				$largeImg.attr('src', options.largeImageUrl);
 
-				$zoomContainer.show();
+				$zoomMask.show();
 				setupLens($lens, $smallImg, $largeImg);
 
 				toggleZoom($anchor, false);
@@ -113,9 +117,9 @@
 				throwBigImageError('plugin not initialized');
 			}
 
-			var $lens          = getLens($anchor);
-				$zoomContainer = getZoomContainer($anchor),
-				id             = $anchor.data('bigImageId');
+			var $lens     = getLens($anchor);
+				$zoomMask = getZoomMask($anchor),
+				id        = $anchor.data('bigImageId');
 
 			$anchor
 				.unbind('click.bigImage')
@@ -125,9 +129,9 @@
 				.data('bigImageId', null)
 
 			$lens.remove();
-			$zoomContainer.remove();
+			$zoomMask.remove();
 
-			$.bigImage.zoomContainers[id] = null;
+			$.bigImage.zoomMasks[id] = null;
 			$.bigImage.settings[id] = null;
 
 			var anchorIndex = $.bigImage.anchors.indexOf(anchor);
@@ -162,7 +166,7 @@
 	*/
 
 	function setSettings($anchor, settings) {
-		var anchorSettings = $.extend($.bigImage.defaultSettings, settings);
+		var anchorSettings = $.extend(true, $.bigImage.defaultSettings, settings);
 
 		$.bigImage.settings[$anchor.data('bigImageId')] = anchorSettings;
 		return anchorSettings;
@@ -183,12 +187,12 @@
 		return $anchor.bind('click.bigImage', function (e) { e.preventDefault(); });
 	}
 
-	function setStyles($anchor, $smallImg, $lens, $zoomContainer, $largeImg) {
+	function setStyles($anchor, $smallImg, $lens, $zoomMask, $largeImg) {
 		var settings = getSettings($anchor);
 
-		$zoomContainer.css({
-			width: settings.zoomWidth + 'px',
-			height: settings.zoomHeight + 'px'
+		$zoomMask.css({
+			width: settings.zoom.width + 'px',
+			height: settings.zoom.height + 'px'
 		});
 
 		if (settings.autoStyle) {
@@ -210,7 +214,7 @@
 
 			var anchorOffset = $anchor.offset();
 
-			$zoomContainer.css({
+			$zoomMask.css({
 				overflow: 'hidden',
 				position: 'absolute',
 				top: anchorOffset.top,
@@ -223,17 +227,19 @@
 		}
 	}
 
-	function getZoomContainer($anchor) {
-		var val = $.bigImage.zoomContainers[$anchor.data('bigImageId')];
+	function getZoomMask($anchor) {
+		var val = $.bigImage.zoomMasks[$anchor.data('bigImageId')];
 
 		if (!val) {
 			var settings = getSettings($anchor),
-				$container = getDomSetting(settings, 'zoomContainer');
+				$container = getElementSetting(settings.zoom.maskElement);
 
-			val = $.bigImage.zoomContainers[$anchor.data('bigImageId')] = $container.appendTo('body');
+			val = $.bigImage.zoomMasks[$anchor.data('bigImageId')] = $container.appendTo('body');
 
-			var wrapper = getDomSetting(settings, 'zoomWrapper');
-			val.wrap(wrapper);
+			if (settings.zoom.wrapperElement) {
+				var wrapper = getElementSetting(settings.zoom.wrapperElement);
+				val.wrap(wrapper);
+			}
 		}
 
 		return val;
@@ -250,11 +256,11 @@
 	}
 
 	function getLargeImage($anchor) {
-		var $zoomContainer = getZoomContainer($anchor),
-			$val = $('img:first', $zoomContainer);
+		var $zoomMask = getZoomMask($anchor),
+			$val = $('img:first', $zoomMask);
 
 		if (!$val.length) {
-			$val = $('<img/>').appendTo($zoomContainer);
+			$val = $('<img/>').appendTo($zoomMask);
 		}
 
 		return $val;
@@ -265,7 +271,7 @@
 
 		if (!val) {
 			var settings = getSettings($anchor),
-				$lens = getDomSetting(settings, 'lens');
+				$lens = getElementSetting(settings.lens.element);
 
 			val = $.bigImage.lenses[$anchor.data('bigImageId')] = $lens.appendTo($anchor);
 		}
@@ -296,8 +302,8 @@
 			settings = getSettings($anchor);
 
 		return {
-			height: imageRatios.height * settings.zoomHeight,
-			width: imageRatios.width * settings.zoomWidth
+			height: imageRatios.height * settings.zoom.height,
+			width: imageRatios.width * settings.zoom.width
 		};
 	}
 
@@ -311,18 +317,18 @@
 	}
 
 	function toggleZoom($anchor, visible) {
-		var $lens          = getLens($anchor),
-			$zoomContainer = getZoomContainer($anchor);
+		var $lens     = getLens($anchor),
+			$zoomMask = getZoomMask($anchor);
 
 		if (typeof visible === 'undefined') {
-			visible = !$zoomContainer.is(':visible');
+			visible = !$zoomMask.is(':visible');
 		}
 
 		if (visible) {
-			$zoomContainer.show();
+			$zoomMask.show();
 			$lens.show();
 		} else {
-			$zoomContainer.hide();
+			$zoomMask.hide();
 			$lens.hide();
 		}
 	}
@@ -401,9 +407,7 @@
 		throw 'BigImage Error: ' + message;
 	}
 
-	function getDomSetting(settings, name) {
-		var value = settings[name];
-
+	function getElementSetting(value) {
 		if ($.isFunction(value)) {
 			value = value();
 		}
