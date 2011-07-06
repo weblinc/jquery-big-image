@@ -17,7 +17,9 @@
 		zoomMasks: {},
 		lenses: {},
 
-		anchors: []
+		anchors: [],
+
+		lastPositions: {}
 	};
 
 	$.extend($.bigImage, {
@@ -365,6 +367,20 @@
 		});
 	}
 
+	function savePosition($anchor, position) {
+		var id = $anchor.data('bigImageId');
+		return $.bigImage.lastPositions[id] = position;
+	}
+
+	function getPosition($anchor) {
+		var id = $anchor.data('bigImageId');
+
+		if (!$.bigImage.lastPositions[id]) {
+			return null;
+		}
+
+		return $.bigImage.lastPositions[id];
+	}
 
 	/*
 	* Utility Functions
