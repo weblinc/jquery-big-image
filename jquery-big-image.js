@@ -50,6 +50,8 @@
 
 			setupAnchor($anchor, settings);
 
+			var id = $anchor.data('bigImageId');
+
 			preload(largeImageUrl, function () {
 				var $smallImg = getSmallImage($anchor),
 					$lens     = getLens($anchor),
@@ -62,20 +64,21 @@
 
 				setupLens($lens, $smallImg, $largeImg);
 
-				toggleZoom($anchor, false);
+				turnOffZoom($anchor);
 
 				$anchor
 					.bind('mouseenter.bigImage', function () {
-						toggleZoom($anchor);
+						turnOnZoom($anchor);
 
 						var imageRatios = calculateImageRatios($smallImg, $largeImg);
 
 						$anchor.bind('mousemove.bigImage', function (e) {
-							moveZoom($lens, $smallImg, $largeImg, imageRatios, e);
+							moveZoom($lens, $smallImg, $largeImg, imageRatios, [e.pageX, e.pageY]);
+							savePosition($anchor, [e.pageX, e.pageY]);
 						});
 					})
 					.bind('mouseleave.bigImage', function () {
-						toggleZoom($anchor);
+						turnOffZoom($anchor);
 
 						$smallImg.unbind('mousemove.bigImage');
 					});
@@ -83,11 +86,14 @@
 		},
 
 		changeImage: function (anchor, options) {
-			var $anchor = $(anchor);
+			var $anchor = $(anchor),
+				id = $anchor.data('bigImageId');
 
-			if (!$anchor.data('bigImageId')) {
+			if (!id) {
 				throwBigImageError('must be initialized to change image');
 			}
+
+			options = $.extend({ smallImageUrl: getSmallImage($anchor).attr('src') }, options);
 
 			var $lens    = getLens($anchor),
 				$loading = getElementSetting(getSettings($anchor).lens.loadingElement);
@@ -106,9 +112,15 @@
 				$zoomMask.show();
 				setupLens($lens, $smallImg, $largeImg);
 
-				toggleZoom($anchor, false);
-
 				$loading.remove();
+
+				moveZoom(
+					$lens,
+					$smallImg,
+					$largeImg,
+					calculateImageRatios($smallImg, $largeImg),
+					getPosition($anchor)
+				);
 			});
 		},
 
@@ -318,31 +330,30 @@
 		});
 	}
 
-	function toggleZoom($anchor, visible) {
+	function turnOnZoom($anchor) {
 		var $lens     = getLens($anchor),
 			$zoomMask = getZoomMask($anchor);
 
-		if (typeof visible === 'undefined') {
-			visible = !$zoomMask.is(':visible');
-		}
-
-		if (visible) {
-			$zoomMask.show();
-			$lens.show();
-		} else {
-			$zoomMask.hide();
-			$lens.hide();
-		}
+		$zoomMask.show();
+		$lens.show();
 	}
 
-	function moveZoom($lens, $smallImg, $largeImg, imageRatios, event) {
+	function turnOffZoom($anchor) {
+		var $lens     = getLens($anchor),
+			$zoomMask = getZoomMask($anchor);
+
+		$zoomMask.hide();
+		$lens.hide();
+	}
+
+	function moveZoom($lens, $smallImg, $largeImg, imageRatios, position) {
 		var mouseOffset = $smallImg.offset(),
 
 			lensHeight  = $lens.outerHeight(),
 			lensWidth   = $lens.outerWidth(),
 
-			lensTop     = (event.pageY - mouseOffset.top) - (lensHeight / 2),
-			lensLeft    = (event.pageX - mouseOffset.left) - (lensWidth / 2),
+			lensTop     = (position[1] - mouseOffset.top) - (lensHeight / 2),
+			lensLeft    = (position[0] - mouseOffset.left) - (lensWidth / 2),
 
 			maxLensTop  = $smallImg.height() - lensHeight,
 			maxLensLeft = $smallImg.width() - lensWidth;
