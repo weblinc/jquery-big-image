@@ -103,15 +103,15 @@
 
 			preload(options.smallImageUrl, options.largeImageUrl, function () {
 				var $smallImg = getSmallImage($anchor),
-					$largeImg = getLargeImage($anchor),
-					$zoomMask = getZoomMask($anchor);
+					$largeImg = getLargeImage($anchor);
 
 				$smallImg.attr('src', options.smallImageUrl);
 				$largeImg.attr('src', options.largeImageUrl);
 
+				getZoomMask($anchor).show();
+
 				$anchor.data('imageRatios', calculateImageRatios($smallImg, $largeImg));
 
-				$zoomMask.show();
 				setupLens($lens, $smallImg, $largeImg);
 
 				$loading.remove();
@@ -134,7 +134,6 @@
 			}
 
 			var $lens     = getLens($anchor);
-				$zoomMask = getZoomMask($anchor),
 				id        = $anchor.data('bigImageId');
 
 			$anchor
@@ -145,7 +144,7 @@
 				.data('bigImageId', null)
 
 			$lens.remove();
-			$zoomMask.remove();
+			getZoomMask($anchor).remove();
 
 			$.bigImage.zoomMasks[id] = null;
 			$.bigImage.settings[id] = null;
@@ -204,41 +203,33 @@
 	}
 
 	function setStyles($anchor, $smallImg, $lens, $zoomMask, $largeImg) {
-		var settings = getSettings($anchor),
-			anchorOffset = $anchor.offset();
+		var settings = getSettings($anchor);
+
+		$anchor.css({
+			display: 'block',
+			width: $smallImg.width(),
+			height: $smallImg.height()
+		});
+
+		var anchorOffset = $anchor.offset();
 
 		$zoomMask.css({
 			overflow: 'hidden',
 			width: settings.zoom.width + 'px',
 			height: settings.zoom.height + 'px',
-
-			// overlay
 			position: 'absolute',
 			top: anchorOffset.top,
 			left: anchorOffset.left + $anchor.outerWidth()
 		});
 
-		$lens.css({
-			position: 'absolute'
-		});
+		$lens.css({ position: 'absolute' });
 
-		$largeImg.css({
-			position: 'absolute'
-		});
-
-		$anchor.css({
-			display: 'block',
-			width: $smallImg.width()
-		});
+		$largeImg.css({ position: 'absolute' });
 
 		if (settings.autoStyle) {
-			$anchor.css({
-				position: 'relative'
-			});
+			$anchor.css({ position: 'relative' });
 
-			$smallImg.css({
-				zIndex: 999
-			});
+			$smallImg.css({ zIndex: 999 });
 
 			$lens.css({
 				border: '2px solid',
@@ -255,11 +246,6 @@
 				$container = getElementSetting(settings.zoom.maskElement);
 
 			val = $.bigImage.zoomMasks[$anchor.data('bigImageId')] = $container.appendTo('body');
-
-			if (settings.zoom.wrapperElement) {
-				var wrapper = getElementSetting(settings.zoom.wrapperElement);
-				val.wrap(wrapper);
-			}
 		}
 
 		return val;
@@ -337,19 +323,13 @@
 	}
 
 	function turnOnZoom($anchor) {
-		var $lens     = getLens($anchor),
-			$zoomMask = getZoomMask($anchor);
-
-		$zoomMask.show();
-		$lens.show();
+		getZoomMask($anchor).show();
+		getLens($anchor).show();
 	}
 
 	function turnOffZoom($anchor) {
-		var $lens     = getLens($anchor),
-			$zoomMask = getZoomMask($anchor);
-
-		$zoomMask.hide();
-		$lens.hide();
+		getZoomMask($anchor).hide();
+		getLens($anchor).hide();
 	}
 
 	function moveZoom($lens, $smallImg, $largeImg, imageRatios, position) {
