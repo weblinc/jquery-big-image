@@ -133,8 +133,11 @@
 				throwBigImageError('plugin not initialized');
 			}
 
-			var $lens     = getLens($anchor);
-				id        = $anchor.data('bigImageId');
+			var $lens = getLens($anchor);
+				id    = $anchor.data('bigImageId');
+
+			$lens.remove();
+			getZoomMask($anchor).remove();
 
 			$anchor
 				.unbind('click.bigImage')
@@ -143,8 +146,6 @@
 				.unbind('mouseleave.bigImage')
 				.data('bigImageId', null)
 
-			$lens.remove();
-			getZoomMask($anchor).remove();
 
 			$.bigImage.zoomMasks[id] = null;
 			$.bigImage.settings[id] = null;
@@ -242,7 +243,7 @@
 		var val = $.bigImage.zoomMasks[$anchor.data('bigImageId')];
 
 		if (!val) {
-			var settings = getSettings($anchor),
+			var settings = getSettings($anchor) || { zoom: {} },
 				$container = getElementSetting(settings.zoom.maskElement);
 
 			val = $.bigImage.zoomMasks[$anchor.data('bigImageId')] = $container.appendTo('body');
