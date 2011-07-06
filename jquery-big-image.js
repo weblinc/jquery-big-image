@@ -55,10 +55,9 @@
 			preload(largeImageUrl, function () {
 				var $smallImg = getSmallImage($anchor),
 					$lens     = getLens($anchor),
-					$largeImg = getLargeImage($anchor),
-					$zoomMask = getZoomMask($anchor);
+					$largeImg = getLargeImage($anchor);
 
-				setStyles($anchor, $smallImg, $lens, $zoomMask, $largeImg);
+				setStyles($anchor);
 
 				$largeImg.attr('src', largeImageUrl);
 
@@ -203,8 +202,12 @@
 		return $anchor.bind('click.bigImage', function (e) { e.preventDefault(); });
 	}
 
-	function setStyles($anchor, $smallImg, $lens, $zoomMask, $largeImg) {
-		var settings = getSettings($anchor);
+	function setStyles($anchor) {
+		var settings = getSettings($anchor),
+			$smallImg = getSmallImage($anchor),
+			$lens     = getLens($anchor),
+			$largeImg = getLargeImage($anchor),
+			$zoomMask = getZoomMask($anchor);
 
 		$anchor.css({
 			display: 'block',
