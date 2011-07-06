@@ -209,18 +209,31 @@
 
 		$zoomMask.css({
 			overflow: 'hidden',
-			position: 'absolute',
 			width: settings.zoom.width + 'px',
 			height: settings.zoom.height + 'px',
+
+			// overlay
+			position: 'absolute',
 			top: anchorOffset.top,
 			left: anchorOffset.left + $anchor.outerWidth()
 		});
 
+		$lens.css({
+			position: 'absolute'
+		});
+
+		$largeImg.css({
+			position: 'absolute'
+		});
+
+		$anchor.css({
+			display: 'block',
+			width: $smallImg.width()
+		});
+
 		if (settings.autoStyle) {
 			$anchor.css({
-				position: 'relative',
-				display: 'block',
-				width: $smallImg.width()
+				position: 'relative'
 			});
 
 			$smallImg.css({
@@ -228,14 +241,8 @@
 			});
 
 			$lens.css({
-				position: 'absolute',
-				border: '2px solid black',
+				border: '2px solid',
 				zIndex: 1000
-			});
-
-
-			$largeImg.css({
-				position: 'absolute'
 			});
 		}
 	}
