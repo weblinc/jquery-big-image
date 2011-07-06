@@ -70,12 +70,12 @@
 					.bind('mouseenter.bigImage', function () {
 						turnOnZoom($anchor);
 
-						var imageRatios = calculateImageRatios($smallImg, $largeImg);
-
-						$anchor.bind('mousemove.bigImage', function (e) {
-							moveZoom($lens, $smallImg, $largeImg, imageRatios, [e.pageX, e.pageY]);
-							savePosition($anchor, [e.pageX, e.pageY]);
-						});
+						$anchor
+							.data('imageRatios', calculateImageRatios($smallImg, $largeImg))
+							.bind('mousemove.bigImage', function (e) {
+								moveZoom($lens, $smallImg, $largeImg, $anchor.data('imageRatios'), [e.pageX, e.pageY]);
+								savePosition($anchor, [e.pageX, e.pageY]);
+							});
 					})
 					.bind('mouseleave.bigImage', function () {
 						turnOffZoom($anchor);
@@ -108,6 +108,8 @@
 
 				$smallImg.attr('src', options.smallImageUrl);
 				$largeImg.attr('src', options.largeImageUrl);
+
+				$anchor.data('imageRatios', calculateImageRatios($smallImg, $largeImg));
 
 				$zoomMask.show();
 				setupLens($lens, $smallImg, $largeImg);
@@ -202,11 +204,16 @@
 	}
 
 	function setStyles($anchor, $smallImg, $lens, $zoomMask, $largeImg) {
-		var settings = getSettings($anchor);
+		var settings = getSettings($anchor),
+			anchorOffset = $anchor.offset();
 
 		$zoomMask.css({
+			overflow: 'hidden',
+			position: 'absolute',
 			width: settings.zoom.width + 'px',
-			height: settings.zoom.height + 'px'
+			height: settings.zoom.height + 'px',
+			top: anchorOffset.top,
+			left: anchorOffset.left + $anchor.outerWidth()
 		});
 
 		if (settings.autoStyle) {
@@ -226,14 +233,6 @@
 				zIndex: 1000
 			});
 
-			var anchorOffset = $anchor.offset();
-
-			$zoomMask.css({
-				overflow: 'hidden',
-				position: 'absolute',
-				top: anchorOffset.top,
-				left: anchorOffset.left + $anchor.outerWidth()
-			});
 
 			$largeImg.css({
 				position: 'absolute'
