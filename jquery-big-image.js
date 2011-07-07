@@ -107,21 +107,25 @@
 				$smallImg.attr('src', options.smallImageUrl);
 				$largeImg.attr('src', options.largeImageUrl);
 
-				getZoomMask($anchor).show();
+				// Wrapped in an immediately-run setTimeout to fix a bug in Firefox where height
+				// isn't recalculated correctly until the closure is complete
+				setTimeout(function() {
+					getZoomMask($anchor).show();
 
-				$anchor.data('imageRatios', calculateImageRatios($smallImg, $largeImg));
+					$anchor.data('imageRatios', calculateImageRatios($smallImg, $largeImg));
 
-				setupLens($lens, $smallImg, $largeImg);
+					setupLens($lens, $smallImg, $largeImg);
 
-				$loading.remove();
+					$loading.remove();
 
-				moveZoom(
-					$lens,
-					$smallImg,
-					$largeImg,
-					calculateImageRatios($smallImg, $largeImg),
-					getPosition($anchor)
-				);
+					moveZoom(
+						$lens,
+						$smallImg,
+						$largeImg,
+						calculateImageRatios($smallImg, $largeImg),
+						getPosition($anchor)
+					);
+				}, 0);
 			});
 		},
 
