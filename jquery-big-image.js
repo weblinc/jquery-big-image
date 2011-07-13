@@ -164,7 +164,11 @@
 		}
 	});
 
+	var isWindowLoaded = false;
+
 	$.fn.bigImage = function () {
+		$(window).load(function() { isWindowLoaded = true; });
+
 		var argumentsArray = $.makeArray(arguments),
 			command = null,
 			options = argumentsArray[argumentsArray.length - 1];
@@ -179,9 +183,15 @@
 			throwBigImageError('invalid method name');
 		}
 
-		return $(this).each(function () {
-			$.bigImage[command](this, options);
-		});
+		function runCommand(links) {
+			return $(links).each(function () {
+				$.bigImage[command](this, options);
+			});
+		}
+
+		var links = this;
+		isWindowLoaded ? runCommand(links) : $(window).load(function() { runCommand(links); });
+		return links;
 	};
 
 
