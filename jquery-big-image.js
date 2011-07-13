@@ -109,9 +109,9 @@
 			$smallImg.attr('src', options.smallImageUrl);
 			$largeImg.attr('src', options.largeImageUrl);
 
-			calculateImageRatios($smallImg, $largeImg, function () {
-				getZoomMask($anchor).show();
+			getZoomMask($anchor).show();
 
+			calculateImageRatios($smallImg, $largeImg, function () {
 				setupLens($lens, $smallImg, $largeImg);
 
 				$loading.remove();
