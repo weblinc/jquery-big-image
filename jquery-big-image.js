@@ -433,6 +433,7 @@
 
 					if (allImagesLoaded()) {
 						callback();
+						$(this).remove();
 					}
 				})
 					.get(0)
