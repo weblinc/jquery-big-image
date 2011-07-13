@@ -54,18 +54,16 @@
 				setupAnchor($anchor, settings);
 			}
 
-			setupAnchor($anchor, settings);
+			var id = $anchor.data('bigImageId'),
+				$smallImg = getSmallImage($anchor),
+				$largeImg = getLargeImage($anchor);
 
-			var id = $anchor.data('bigImageId');
+			$largeImg.attr('src', largeImageUrl);
 
-			preload(largeImageUrl, function () {
-				var $smallImg = getSmallImage($anchor),
-					$lens     = getLens($anchor),
-					$largeImg = getLargeImage($anchor);
+			calculateImageRatios($smallImg, $largeImg, function() {
+				var $lens = getLens($anchor);
 
 				setStyles($anchor);
-
-				$largeImg.attr('src', largeImageUrl);
 
 				setupLens($lens, $smallImg, $largeImg);
 
@@ -75,15 +73,14 @@
 					.bind('mouseenter.bigImage', function () {
 						turnOnZoom($anchor);
 
-						$anchor
-							.data('imageRatios', calculateImageRatios($smallImg, $largeImg))
-							.bind('mousemove.bigImage', function (e) {
-								moveZoom($lens, $smallImg, $largeImg, $anchor.data('imageRatios'), [e.pageX, e.pageY]);
-								savePosition($anchor, [e.pageX, e.pageY]);
-							});
+						$anchor.bind('mousemove.bigImage', function (e) {
+							moveZoom($lens, $smallImg, $largeImg, [e.pageX, e.pageY]);
+							savePosition($anchor, [e.pageX, e.pageY]);
+						});
 					})
 					.bind('mouseleave.bigImage', function () {
 						turnOffZoom($anchor);
+						savePosition($anchor, null);
 
 						$smallImg.unbind('mousemove.bigImage');
 					});
@@ -98,40 +95,39 @@
 				throwBigImageError('must be initialized to change image');
 			}
 
-			options = $.extend({ smallImageUrl: getSmallImage($anchor).attr('src') }, options);
-
 			var $lens    = getLens($anchor),
-				$loading = getElementSetting(getSettings($anchor).lens.loadingElement);
+				$loading = getElementSetting(getSettings($anchor).lens.loadingElement),
+				$smallImg = getSmallImage($anchor),
+				$largeImg = getLargeImage($anchor);
 
-			$anchor.attr('href', options.largeImageUrl);
+			options = $.extend({ smallImageUrl: $smallImg.attr('src') }, options);
+
 			$lens.append($loading);
 
-			preload(options.smallImageUrl, options.largeImageUrl, function () {
-				var $smallImg = getSmallImage($anchor),
-					$largeImg = getLargeImage($anchor);
+			$anchor.attr('href', options.largeImageUrl);
 
-				$smallImg.attr('src', options.smallImageUrl);
-				$largeImg.attr('src', options.largeImageUrl);
+			$smallImg.attr('src', options.smallImageUrl);
+			$largeImg.attr('src', options.largeImageUrl);
 
-				// Wrapped in an immediately-run setTimeout to fix a bug in Firefox where height
-				// isn't recalculated correctly until the closure is complete
-				setTimeout(function() {
-					getZoomMask($anchor).show();
+			calculateImageRatios($smallImg, $largeImg, function () {
+				getZoomMask($anchor).show();
 
-					$anchor.data('imageRatios', calculateImageRatios($smallImg, $largeImg));
+				setupLens($lens, $smallImg, $largeImg);
 
-					setupLens($lens, $smallImg, $largeImg);
+				$loading.remove();
 
-					$loading.remove();
+				var currentMousePosition = getPosition($anchor);
 
+				if (currentMousePosition) {
 					moveZoom(
 						$lens,
 						$smallImg,
 						$largeImg,
-						calculateImageRatios($smallImg, $largeImg),
-						getPosition($anchor)
+						currentMousePosition
 					);
-				}, 0);
+
+					turnOnZoom($anchor)
+				}
 			});
 		},
 
@@ -309,40 +305,52 @@
 		return val;
 	}
 
-	function calculateImageRatios($smallImg, $largeImg) {
-		if (!$smallImg.is(':visible') || !$largeImg.is(':visible')) {
-			throwBigImageError('images must be visible to calculate lens size');
+	var imageRatioCache = {};
+	function calculateImageRatios($smallImg, $largeImg, callback) {
+		var smallImageUrl = $smallImg.attr('src'),
+			largeImageUrl = $largeImg.attr('src'),
+			cacheKey = [smallImageUrl,largeImageUrl].join();
+
+		if (imageRatioCache[cacheKey]) {
+			callback(imageRatioCache[cacheKey]);
+			return;
 		}
 
-		var fullSizeHeight = $largeImg.height(),
-			fullSizeWidth  = $largeImg.width(),
+		preload(smallImageUrl, largeImageUrl, function() {
+			if (!$smallImg.is(':visible') || !$largeImg.is(':visible')) {
+				throwBigImageError('images must be visible to calculate lens size');
+			}
 
-			smallSizeHeight = $smallImg.height(),
-			smallSizeWidth = $smallImg.width();
+			var ratios = {
+				height: $smallImg.height() / $largeImg.height(),
+				width: $smallImg.width() / $largeImg.width()
+			};
 
-		return {
-			height: smallSizeHeight / fullSizeHeight,
-			width: smallSizeWidth / fullSizeWidth
-		};
-	}
+			// WebKit has invalid dimensions depending on image load state
+			if (!isFinite(ratios.height) || !isFinite(ratios.width)) {
+				calculateImageRatios($smallImg, $largeImg, callback);
+				return;
+			}
 
-	function calculateLensSize($smallImg, $largeImg) {
-		var $anchor = $smallImg.closest('a'),
-			imageRatios = calculateImageRatios($smallImg, $largeImg),
-			settings = getSettings($anchor);
+			imageRatioCache[cacheKey] = ratios;
 
-		return {
-			height: imageRatios.height * settings.zoom.height,
-			width: imageRatios.width * settings.zoom.width
-		};
+			callback(ratios);
+		});
 	}
 
 	function setupLens($lens, $smallImg, $largeImg) {
-		var lensDimensions = calculateLensSize($smallImg, $largeImg);
+		calculateImageRatios($smallImg, $largeImg, function(ratios) {
+			var $anchor = $smallImg.closest('a'),
+				settings = getSettings($anchor),
+				lensDimensions = {
+					height: ratios.height * settings.zoom.height,
+					width: ratios.width * settings.zoom.width
+				};
 
-		return $lens.css({
-			height: lensDimensions.height + 'px',
-			width: lensDimensions.width + 'px'
+			 $lens.css({
+				height: lensDimensions.height + 'px',
+				width: lensDimensions.width + 'px'
+			});
 		});
 	}
 
@@ -356,35 +364,37 @@
 		getLens($anchor).hide();
 	}
 
-	function moveZoom($lens, $smallImg, $largeImg, imageRatios, position) {
-		var mouseOffset = $smallImg.offset(),
+	function moveZoom($lens, $smallImg, $largeImg, position) {
+		calculateImageRatios($smallImg, $largeImg, function(ratios) {
+			var mouseOffset = $smallImg.offset(),
 
-			lensHeight  = $lens.outerHeight(),
-			lensWidth   = $lens.outerWidth(),
+				lensHeight  = $lens.outerHeight(),
+				lensWidth   = $lens.outerWidth(),
 
-			lensTop     = (position[1] - mouseOffset.top) - (lensHeight / 2),
-			lensLeft    = (position[0] - mouseOffset.left) - (lensWidth / 2),
+				lensTop     = (position[1] - mouseOffset.top) - (lensHeight / 2),
+				lensLeft    = (position[0] - mouseOffset.left) - (lensWidth / 2),
 
-			maxLensTop  = $smallImg.height() - lensHeight,
-			maxLensLeft = $smallImg.width() - lensWidth;
+				maxLensTop  = $smallImg.height() - lensHeight,
+				maxLensLeft = $smallImg.width() - lensWidth;
 
-		if (lensTop < 0) { lensTop = 0; }
-		if (lensLeft < 0) { lensLeft = 0; }
+			if (lensTop < 0) { lensTop = 0; }
+			if (lensLeft < 0) { lensLeft = 0; }
 
-		if (lensTop > maxLensTop) { lensTop = maxLensTop; }
-		if (lensLeft > maxLensLeft) { lensLeft = maxLensLeft; }
+			if (lensTop > maxLensTop) { lensTop = maxLensTop; }
+			if (lensLeft > maxLensLeft) { lensLeft = maxLensLeft; }
 
-		$lens.css({
-			top: lensTop + 'px',
-			left: lensLeft + 'px'
-		});
+			$lens.css({
+				top: lensTop + 'px',
+				left: lensLeft + 'px'
+			});
 
-		var imgTop = lensTop / imageRatios.height,
-			imgLeft = lensLeft / imageRatios.width;
+			var imgTop = lensTop / ratios.height,
+				imgLeft = lensLeft / ratios.width;
 
-		$largeImg.css({
-			top: (0 - imgTop) + 'px',
-			left: (0 - imgLeft) + 'px'
+			$largeImg.css({
+				top: (0 - imgTop) + 'px',
+				left: (0 - imgLeft) + 'px'
+			});
 		});
 	}
 
