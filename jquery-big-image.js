@@ -149,7 +149,7 @@
 				.unbind('mouseenter.bigImage')
 				.unbind('mousemove.bigImage')
 				.unbind('mouseleave.bigImage')
-				.data('bigImageId', null)
+				.data('bigImageId', null);
 
 
 			$.bigImage.zoomMasks[id] = null;
