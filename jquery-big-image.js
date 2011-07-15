@@ -50,9 +50,9 @@
 
 			if ($anchor.data('bigImageId')) {
 				return;
-			} else {
-				setupAnchor($anchor, settings);
 			}
+
+			setupAnchor($anchor, settings);
 
 			var id = $anchor.data('bigImageId'),
 				$smallImg = getSmallImage($anchor),
