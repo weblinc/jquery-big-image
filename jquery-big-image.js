@@ -155,7 +155,7 @@
 			$.bigImage.zoomMasks[id] = null;
 			$.bigImage.settings[id] = null;
 
-			var anchorIndex = $.bigImage.anchors.indexOf(anchor);
+			var anchorIndex = $.inArray(anchor, $.bigImage.anchors);
 			$.bigImage.anchors.splice(anchorIndex, 1);
 		}
 	});
