@@ -355,12 +355,27 @@
 	}
 
 	function turnOnZoom($anchor) {
-		getZoomMask($anchor).show();
-		getLens($anchor).show();
+		getZoomMask($anchor).css({
+			left: $anchor.offset().left + $anchor.outerWidth()
+		});
+
+		var currentMousePosition = getPosition($anchor),
+			$lens = getLens($anchor);
+
+		if (currentMousePosition) {
+			moveZoom(
+				$lens,
+				getSmallImage($anchor),
+				getLargeImage($anchor),
+				currentMousePosition
+			);
+		}
+
+		$lens.show();
 	}
 
 	function turnOffZoom($anchor) {
-		getZoomMask($anchor).hide();
+		getZoomMask($anchor).css({ left: '-9999px' });
 		getLens($anchor).hide();
 	}
 
