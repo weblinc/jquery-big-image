@@ -109,24 +109,13 @@
 			$smallImg.attr('src', options.smallImageUrl);
 			$largeImg.attr('src', options.largeImageUrl);
 
-			getZoomMask($anchor).show();
-
 			calculateImageRatios($smallImg, $largeImg, function () {
 				setupLens($lens, $smallImg, $largeImg);
 
 				$loading.remove();
 
-				var currentMousePosition = getPosition($anchor);
-
-				if (currentMousePosition) {
-					moveZoom(
-						$lens,
-						$smallImg,
-						$largeImg,
-						currentMousePosition
-					);
-
-					turnOnZoom($anchor)
+				if (getPosition($anchor)) {
+					turnOnZoom($anchor);
 				}
 			});
 		},
