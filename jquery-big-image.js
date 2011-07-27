@@ -328,7 +328,9 @@
 
 			// WebKit has invalid dimensions depending on image load state
 			if (!isFinite(ratios.height) || !isFinite(ratios.width)) {
-				calculateImageRatios($smallImg, $largeImg, callback);
+				setTimeout(function() {
+					calculateImageRatios($smallImg, $largeImg, callback);
+				}, 5);
 				return;
 			}
 
