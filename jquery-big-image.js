@@ -469,7 +469,7 @@
 		value = $(value);
 
 		if (!value.length) {
-			throwBigImageError(name + ' must be a valid HTML string or return a valid DOM object');
+			throwBigImageError(value + ' must be a valid HTML string or return a valid DOM object');
 		}
 
 		return value;
