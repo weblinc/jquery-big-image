@@ -118,6 +118,10 @@
 					turnOnZoom($anchor);
 				}
 			});
+
+		    setStyles($anchor);
+
+			turnOffZoom($anchor);
 		},
 
 		destroy: function (anchor) {
