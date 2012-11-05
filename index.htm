@@ -55,10 +55,10 @@
 		});
 
 		$('a.change-image').click(function() {
-			$(this).toggleClass('is-alt');
+            $(this).toggleClass('is-alt');
 			var isAlt = $(this).hasClass('is-alt');
 			
-			(isAlt) ? showDefaultImage() : showAltImage();
+			(isAlt) ? showAltImage() : showDefaultImage();
 			
 			function showDefaultImage() {
 				$('a.zoom').bigImage('changeImage', {
