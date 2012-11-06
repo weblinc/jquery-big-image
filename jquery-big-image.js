@@ -110,7 +110,9 @@
 			$largeImg.attr('src', options.largeImageUrl);
 
 			calculateImageRatios($smallImg, $largeImg, function () {
+		        setStyles($anchor);
 				setupLens($lens, $smallImg, $largeImg);
+			    turnOffZoom($anchor);
 
 				$loading.remove();
 
@@ -119,9 +121,7 @@
 				}
 			});
 
-		    setStyles($anchor);
 
-			turnOffZoom($anchor);
 		},
 
 		destroy: function (anchor) {
