@@ -1,7 +1,7 @@
 jquery-big-image.js
 ====== 
 
-A jQuery plugin for image zooming 
+A jQuery plugin for image zooming. 
 
 [View demo](http://weblinc.github.com/jquery-big-image/)
 
