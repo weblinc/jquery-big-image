@@ -16,21 +16,35 @@
 		<h1 class="title">jQuery Big Image</h1>
 		<p>A jQuery plugin for image zooming.</p>
 		<p class="note">
-			Created Sep 27, 2011 - works well in IE 6.0; Firefox, Chrome
+			Created Sep 27, 2011 - works well in IE 6.0; Firefox, Chrome. Photo credit: Nick Hobgood, Wikimedia.
 		</p>
 	</div>
 </div>
 <div class="wl-wrapper">
 	<h2>Mouse over to zoom</h2>
-	<ul>
-		<li><a class="change-image" href="#">Change Image</a></li>
-		<li><a class="destroy" href="#">Destroy</a></li>
-	</ul>
+    
 	<p class="demo">
-		<a class="zoom" href="images/large.jpg">
-			<img src="images/small.jpg" alt="Test Image" />
-		</a>
-	</p>
+        <a class="zoom" href="images/a-large.jpg">
+            <img src="images/a.jpg" alt="Test Image" />
+        </a>
+    </p>
+	
+	<p>
+        Click on a thumbnail to change the image. 
+        <a class="destroy" href="#">Destroy bigImage</a>
+    </p>
+    	
+	<div class="thumbnails">
+        <a href="images/a-large.jpg">
+            <img src="images/a.jpg" alt="Test Image" />
+        </a>
+        <a href="images/b-large.jpg">
+            <img src="images/b.jpg" alt="Test Image" />
+        </a>
+        <a href="images/c-large.jpg">
+            <img src="images/c.jpg" alt="Test Image" />
+        </a>
+    </div>	
 </div>
 </div>
 <div class="wl-footer wl-cf">
@@ -48,36 +62,27 @@
 	$(function() {
 		$('a.zoom').bigImage({
 			zoom: {
+			    width: 600,
+				height: 400,
 				maskElement: function() {
 					return $('<div/>', { 'class': 'zoom-mask' });
 				}
 			}
 		});
 
-		$('a.change-image').click(function() {
-            $(this).toggleClass('is-alt');
-			var isAlt = $(this).hasClass('is-alt');
-			
-			(isAlt) ? showAltImage() : showDefaultImage();
-			
-			function showDefaultImage() {
-				$('a.zoom').bigImage('changeImage', {
-					smallImageUrl: 'images/small.jpg',
-					largeImageUrl: 'images/large.jpg'
-				});
-			}
-			
-			function showAltImage() {
-				$('a.zoom').bigImage('changeImage', {
-					smallImageUrl: 'images/small2.jpeg',
-					largeImageUrl: 'images/large2.jpeg'
-				});
-			}
-		});
+		$('.thumbnails a').click(function(e) {
+            e.preventDefault();
+            var $this = $(this);
+            
+            $('a.zoom').bigImage('changeImage', {
+                smallImageUrl: $this.find('img').attr('src'),
+                largeImageUrl: $this.attr('href')
+            });
+        });
 
-		$('a.destroy').click(function() {
-			$('a.zoom').bigImage('destroy');
-		});
+        $('a.destroy').click(function() {
+            $('a.zoom').bigImage('destroy');
+        });
 	});
 </script>
 </body>
