@@ -257,6 +257,10 @@
 		if (!val) {
 			var settings = getSettings($anchor) || { zoom: {} },
 				$container = getElementSetting(settings.zoom.maskElement);
+				$container.css({ 
+				    position: 'absolute', 
+				    left: '-9999px' 
+				});
 
 			val = $.bigImage.zoomMasks[$anchor.data('bigImageId')] = $container.appendTo('body');
 		}
