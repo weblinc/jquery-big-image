@@ -37,7 +37,8 @@ button{margin:0;border:0;border-radius:8px;padding:5px 10px;background-color:#c9
 
 
 /*demo specific style */
-.demo {
-	position: relative;
-	padding-bottom: 60px;
-}
+.demo { position: relative;	padding-bottom: 10px; }
+.thumbnails { height: 100px; }
+.thumbnails a { margin: 5px; float:left; }
+.thumbnails a img { width: 50px; height: auto; }
+.zoom-mask { margin-left: 10px; }
